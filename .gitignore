@@ -1,0 +1,22 @@
+# Data and model weights (large files)
+pretrained_weights/
+backend/pretrained_weights/
+dataset/
+
+# Backend venv
+backend/.venv/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+
+# Env / IDE
+.env
+.venv/
+venv/

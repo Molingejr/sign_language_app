@@ -1,0 +1,51 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap');
+
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'DM Sans', system-ui, -apple-system, sans-serif;
+  /* Hospital / clinical theme */
+  --color-page: #f0f9ff;
+  --color-card: #ffffff;
+  --color-border: #bae6fd;
+  --color-text: #0c4a6e;
+  --color-muted: #0369a1;
+  --color-accent: #0d9488;
+  --color-accent-hover: #0f766e;
+  --shadow-card: 0 1px 3px rgba(6, 78, 59, 0.08);
+}
+
+/* Hospital accent utilities */
+.bg-accent { background-color: var(--color-accent); }
+.text-accent { color: var(--color-accent); }
+.outline-accent { outline-color: var(--color-accent); }
+
+@layer base {
+  body {
+    @apply min-h-screen bg-page font-sans text-text antialiased leading-normal;
+  }
+  #root {
+    @apply min-h-screen;
+  }
+  button {
+    @apply font-medium;
+  }
+  button:focus-visible {
+    @apply outline-2 outline-offset-2 outline-[var(--color-accent)];
+  }
+}
+
+@layer utilities {
+  .animate-pulse-dot {
+    animation: pulse-dot 1s ease-in-out infinite;
+  }
+}
+
+@keyframes pulse-dot {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
