@@ -25,9 +25,32 @@ export function Transcript({ items, onClear, alwaysShow }: TranscriptProps) {
         )}
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto">
-        <p className="m-0 text-base leading-relaxed text-text">
-          {items.length > 0 ? items.join(' ') : 'No interpretation yet. Record a clip to see the transcript here.'}
-        </p>
+        {items.length > 0 ? (
+          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1.5">
+            {items.map((phrase, i) => (
+              <span key={`${i}-${phrase}`} className="inline-flex items-baseline gap-1.5">
+                <span className="rounded-md border border-border bg-[var(--color-page)] px-2 py-1 text-sm font-medium text-text">
+                  {phrase}
+                </span>
+                {i < items.length - 1 && (
+                  <span className="text-muted/60" aria-hidden>·</span>
+                )}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-4 text-center">
+            <img
+              src="/svgs/undraw_creative-flow_t3kz.svg"
+              alt=""
+              className="mx-auto h-28 w-auto max-w-full object-contain opacity-90"
+              aria-hidden
+            />
+            <p className="mt-3 m-0 text-sm leading-relaxed text-muted">
+              No interpretation yet. Record a clip to see the transcript here.
+            </p>
+          </div>
+        )}
       </div>
     </section>
   )

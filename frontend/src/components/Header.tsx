@@ -27,8 +27,14 @@ export function Header() {
         className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8"
       >
         <div className="flex lg:flex-1">
-          <NavLink to="/" className="-m-1.5 flex items-center gap-2 p-1.5">
+          <NavLink to="/" className="-m-1.5 flex items-center gap-2.5 p-1.5">
             <span className="sr-only">Sign Language</span>
+            <img
+              src="/svgs/undraw_medical-care_7m9g.svg"
+              alt=""
+              className="h-9 w-auto"
+              aria-hidden
+            />
             <span className="text-lg font-bold tracking-tight text-text">
               Sign Language
             </span>
@@ -72,9 +78,15 @@ export function Header() {
           <div className="flex items-center justify-between">
             <NavLink
               to="/"
-              className="text-lg font-bold tracking-tight text-text"
+              className="flex items-center gap-2.5 text-lg font-bold tracking-tight text-text"
               onClick={() => setMobileMenuOpen(false)}
             >
+              <img
+                src="/svgs/undraw_medical-care_7m9g.svg"
+                alt=""
+                className="h-8 w-auto"
+                aria-hidden
+              />
               Sign Language
             </NavLink>
             <button
