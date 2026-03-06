@@ -12,6 +12,8 @@ NUM_CLASSES = int(os.environ.get("NUM_CLASSES", "2000"))
 MAX_FRAMES = int(os.environ.get("MAX_FRAMES", "64"))
 # Below this confidence, return "(no sign)" instead of top class (avoids e.g. always "BOOK" on empty video)
 MIN_CONFIDENCE_THRESHOLD = float(os.environ.get("MIN_CONFIDENCE_THRESHOLD", "0.08"))
+# Optional: per-frame CLAHE (contrast) to improve robustness to lighting (JETIR-style preprocessing)
+PREPROCESS_VIDEO = os.environ.get("PREPROCESS_VIDEO", "false").lower() in ("true", "1", "yes")
 WEIGHTS_DIR = Path(os.environ.get("WEIGHTS_DIR", str(_BACKEND_ROOT / "pretrained_weights")))
 CHECKPOINT_PATH = Path(
     os.environ.get(
@@ -26,3 +28,8 @@ RGB_BACKBONE_PATH = WEIGHTS_DIR / "rgb_imagenet.pt"
 
 # Static frontend (after npm run build)
 FRONTEND_DIST = ROOT / "frontend" / "dist"
+
+# Gloss→sentence: use pretrained text-to-text model (e.g. FLAN-T5). If unset or "false", use minimal fallback.
+GLOSS_USE_MODEL = os.environ.get("GLOSS_USE_MODEL", "true").lower() in ("true", "1", "yes")
+GLOSS_MODEL_NAME = os.environ.get("GLOSS_MODEL_NAME", "google/flan-t5-small")
+GLOSS_DEVICE = os.environ.get("GLOSS_DEVICE", "cpu").lower()

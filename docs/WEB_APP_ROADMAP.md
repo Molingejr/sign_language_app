@@ -16,6 +16,38 @@ You can ship a working web app **without training** by running the **pretrained 
 
 ---
 
+## How the JETIR paper (real-time sign → text/speech) maps to our app
+
+The paper “Real-time Conversion of Sign Language to Text and Speech, and vice-versa” (JETIR 2023) uses: **gesture input → image processing → CNN → NLP → TTS**. In our codebase that works as follows.
+
+| Paper component | Our implementation | Where it lives |
+|-----------------|--------------------|----------------|
+| **Gesture input** | Webcam clip (2.6 s) sent as video blob | `WebcamCapture.tsx` → `POST /predict` |
+| **Image processing** | Resize (min 226), normalize to [-1,1], center crop 224 | `inference.py`: `_load_frames_from_video_bytes`, `CenterCrop` |
+| **CNN** | I3D (video CNN) on 64 frames | `inference.py`: `get_model()`, `predict()`; `wlasl_i3d/` |
+| **NLP / text** | Single gloss (word); transcript = list of glosses | `predict()` → `gloss`, `top_k`; `SignInterpretation.tsx` transcript |
+| **TTS** | Not implemented yet | — |
+
+**Concrete ways to align with the paper (optional):**
+
+1. **Stronger image processing** (paper: “refining frames, eliminating noise, robustness to lighting”):  
+   **Implemented.** In `backend/app/inference.py`, optional per-frame CLAHE on the luminance channel (LAB) is applied when `PREPROCESS_VIDEO=true`. Set the env var (e.g. `PREPROCESS_VIDEO=1`) to enable; improves robustness in varying lighting.
+
+2. **TTS (sign → speech)** (paper: final step):  
+   **Implemented.** When a gloss is shown or the user taps a transcript word, it can be spoken:
+   - **Frontend**: `frontend/src/utils/speech.ts` uses the Web Speech API; “Speak” on the last result and “Speak all” / click-to-speak on transcript items in Sign Interpretation.
+   - Optional backend TTS can be added later for consistent voice/quality.
+
+3. **Real-time feel** (paper: “minimal latency”):  
+   Already in roadmap Phase 3: overlapping windows or motion-based segment detection so we don’t wait a full 2.5 s between predictions.
+
+4. **Gloss → sentence** (paper: “coherent text”):  
+   Already in roadmap: start with “book | want | pizza”; later add gloss-to-English reordering or a small LM when you have data.
+
+So the paper’s pipeline **already works in our case**: we have gesture → processing → CNN → text; the two additions that match the paper best are **optional preprocessing** and **TTS** for the sign→speech side.
+
+---
+
 ## Process (step-by-step)
 
 ### Phase 1: Backend API (1–2 days)

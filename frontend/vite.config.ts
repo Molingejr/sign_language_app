@@ -7,6 +7,9 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/predict': { target: 'http://127.0.0.1:8000', changeOrigin: true },
+      '/predict-sentence': { target: 'http://127.0.0.1:8000', changeOrigin: true },
+      '/predict-fingerspelling': { target: 'http://127.0.0.1:8000', changeOrigin: true },
+      '/gloss-to-sentence': { target: 'http://127.0.0.1:8000', changeOrigin: true },
       '/health': { target: 'http://127.0.0.1:8000', changeOrigin: true },
     },
   },

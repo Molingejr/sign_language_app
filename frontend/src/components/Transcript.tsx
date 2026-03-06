@@ -3,10 +3,16 @@ interface TranscriptProps {
   onClear: () => void
   /** When true, always render the panel (e.g. for side layout with empty state). */
   alwaysShow?: boolean
+  /** When provided, transcript items are clickable to speak; "Speak all" is shown. */
+  onSpeakItem?: (text: string) => void
 }
 
-export function Transcript({ items, onClear, alwaysShow }: TranscriptProps) {
+export function Transcript({ items, onClear, alwaysShow, onSpeakItem }: TranscriptProps) {
   if (!alwaysShow && items.length === 0) return null
+
+  const handleSpeakAll = () => {
+    if (onSpeakItem && items.length > 0) onSpeakItem(items.join(' '))
+  }
 
   return (
     <section className="flex h-full min-h-0 flex-col rounded-[10px] border border-border bg-card px-5 py-5 shadow-card">
@@ -15,13 +21,25 @@ export function Transcript({ items, onClear, alwaysShow }: TranscriptProps) {
           Transcript
         </h2>
         {items.length > 0 && (
-          <button
-            type="button"
-            className="shrink-0 cursor-pointer rounded-lg border border-border bg-transparent px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:border-muted hover:text-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
-            onClick={onClear}
-          >
-            Clear
-          </button>
+          <div className="flex shrink-0 items-center gap-2">
+            {onSpeakItem && (
+              <button
+                type="button"
+                className="cursor-pointer rounded-lg border border-border bg-transparent px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:border-muted hover:text-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+                onClick={handleSpeakAll}
+                title="Speak full transcript"
+              >
+                Speak all
+              </button>
+            )}
+            <button
+              type="button"
+              className="cursor-pointer rounded-lg border border-border bg-transparent px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:border-muted hover:text-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+              onClick={onClear}
+            >
+              Clear
+            </button>
+          </div>
         )}
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto">
@@ -29,9 +47,20 @@ export function Transcript({ items, onClear, alwaysShow }: TranscriptProps) {
           <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1.5">
             {items.map((phrase, i) => (
               <span key={`${i}-${phrase}`} className="inline-flex items-baseline gap-1.5">
-                <span className="rounded-md border border-border bg-[var(--color-page)] px-2 py-1 text-sm font-medium text-text">
-                  {phrase}
-                </span>
+                {onSpeakItem ? (
+                  <button
+                    type="button"
+                    className="rounded-md border border-border bg-[var(--color-page)] px-2 py-1 text-sm font-medium text-text transition-colors hover:border-accent hover:bg-accent/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+                    onClick={() => onSpeakItem(phrase)}
+                    title={`Speak: ${phrase}`}
+                  >
+                    {phrase}
+                  </button>
+                ) : (
+                  <span className="rounded-md border border-border bg-[var(--color-page)] px-2 py-1 text-sm font-medium text-text">
+                    {phrase}
+                  </span>
+                )}
                 {i < items.length - 1 && (
                   <span className="text-muted/60" aria-hidden>·</span>
                 )}

@@ -1,10 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
+import { useMotionSegment } from '../hooks/useMotionSegment'
+
 interface WebcamCaptureProps {
   captureDurationMs: number
   onStreamReady: (stream: MediaStream) => void
   onCapture: (blob: Blob) => void
   disabled?: boolean
+  /** When true, use motion-based segmentation: auto start on motion, stop when still. */
+  segmentMode?: boolean
 }
 
 export function WebcamCapture({
@@ -12,12 +16,20 @@ export function WebcamCapture({
   onStreamReady,
   onCapture,
   disabled,
+  segmentMode = false,
 }: WebcamCaptureProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const [recording, setRecording] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const { recording: segmentRecording } = useMotionSegment({
+    videoRef,
+    enabled: segmentMode && !disabled,
+    onSegmentReady: onCapture,
+  })
+  const isRecording = segmentMode ? segmentRecording : recording
 
   useEffect(() => {
     let stream: MediaStream | null = null
@@ -93,26 +105,32 @@ export function WebcamCapture({
           muted
           className="block w-full min-h-[320px] aspect-video object-cover scale-x-[-1] sm:min-h-[400px] md:min-h-[480px]"
         />
-        {recording && (
+        {isRecording && (
           <div
             className="pointer-events-none absolute inset-0 flex items-start justify-start gap-2 bg-gradient-to-b from-black/60 to-transparent px-4 py-3 text-[0.8125rem] font-medium text-white"
             aria-hidden
           >
             <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse-dot" />
-            <span>Recording… {(captureDurationMs / 1000).toFixed(1)}s</span>
+            <span>{segmentMode ? 'Recording… (sign then pause)' : `Recording… ${(captureDurationMs / 1000).toFixed(1)}s`}</span>
           </div>
         )}
       </div>
-      <button
-        type="button"
-        className="w-fit cursor-pointer rounded-lg border-0 bg-accent px-5 py-2.5 text-[0.9375rem] font-medium text-white transition-colors hover:bg-[var(--color-accent-hover)] disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-        onClick={startCapture}
-        disabled={disabled || recording}
-      >
-        {recording
-          ? `Recording… (${(captureDurationMs / 1000).toFixed(1)}s)`
-          : 'Capture & interpret'}
-      </button>
+      {segmentMode ? (
+        <p className="text-xs text-muted">
+          Sign in frame — recording starts on motion, stops when you pause.
+        </p>
+      ) : (
+        <button
+          type="button"
+          className="w-fit cursor-pointer rounded-lg border-0 bg-accent px-5 py-2.5 text-[0.9375rem] font-medium text-white transition-colors hover:bg-[var(--color-accent-hover)] disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          onClick={startCapture}
+          disabled={disabled || recording}
+        >
+          {recording
+            ? `Recording… (${(captureDurationMs / 1000).toFixed(1)}s)`
+            : 'Capture & interpret'}
+        </button>
+      )}
     </div>
   )
 }

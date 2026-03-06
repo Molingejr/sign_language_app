@@ -2,8 +2,13 @@
 fastapi>=0.104.0
 uvicorn[standard]>=0.24.0
 python-multipart>=0.0.6
-# Model (shared with repo)
+# Model (shared with repo). PyTorch 2.4+ needed for full transformers support; 2.2 works for I3D sign interpretation.
 numpy<2
-torch
-torchvision
+torch>=2.2.0
+torchvision>=0.17.0
 opencv-python-headless
+tensorflow>=2.16.0
+huggingface_hub>=0.20.0
+# Gloss→sentence (optional): pretrained text-to-text model
+transformers>=4.36.0
+sentencepiece>=0.1.99

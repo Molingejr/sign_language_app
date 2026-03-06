@@ -16,6 +16,7 @@ from backend.app.config import (
     MAX_FRAMES,
     MIN_CONFIDENCE_THRESHOLD,
     NUM_CLASSES,
+    PREPROCESS_VIDEO,
     RGB_BACKBONE_PATH,
 )
 
@@ -25,6 +26,16 @@ def _video_to_tensor(pic: np.ndarray) -> torch.Tensor:
     return torch.from_numpy(pic.transpose([3, 0, 1, 2])).float()
 
 
+def _preprocess_frame(img: np.ndarray) -> np.ndarray:
+    """Per-frame CLAHE on luminance for robustness to lighting (paper: image processing). BGR uint8 -> BGR uint8."""
+    lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+    l_ch, a, b = cv2.split(lab)
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    l_ch = clahe.apply(l_ch)
+    lab = cv2.merge([l_ch, a, b])
+    return cv2.cvtColor(lab, cv2.COLOR_LAB2BGR)
+
+
 def _load_frames_from_video_bytes(
     video_bytes: bytes,
     max_frames: int = MAX_FRAMES,
@@ -32,8 +43,14 @@ def _load_frames_from_video_bytes(
     filename: str | None = None,
 ) -> np.ndarray:
     """Decode video bytes to RGB frames; return array of shape (T, H, W, 3) normalized to [-1,1], min 226."""
-    # Use correct extension so OpenCV picks the right demuxer (frontend sends WebM).
-    suffix = ".webm" if (filename and filename.lower().endswith(".webm")) else ".mp4"
+    # Use correct extension so OpenCV picks the right demuxer.
+    suffix = ".mp4"
+    if filename:
+        lower = filename.lower()
+        if lower.endswith(".webm"):
+            suffix = ".webm"
+        elif lower.endswith((".mpg", ".mpeg")):
+            suffix = ".mpg"
     with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as f:
         f.write(video_bytes)
         path = f.name
@@ -54,6 +71,8 @@ def _load_frames_from_video_bytes(
                     d = 226.0 - min(w, h)
                     sc = 1 + d / min(w, h)
                     img = cv2.resize(img, dsize=(0, 0), fx=sc, fy=sc)
+                if PREPROCESS_VIDEO:
+                    img = _preprocess_frame(img)
                 img = (img.astype(np.float32) / 255.0) * 2.0 - 1.0
                 frames.append(img)
         else:
@@ -67,6 +86,8 @@ def _load_frames_from_video_bytes(
                     d = 226.0 - min(w, h)
                     sc = 1 + d / min(w, h)
                     img = cv2.resize(img, dsize=(0, 0), fx=sc, fy=sc)
+                if PREPROCESS_VIDEO:
+                    img = _preprocess_frame(img)
                 img = (img.astype(np.float32) / 255.0) * 2.0 - 1.0
                 frames.append(img)
         vidcap.release()
@@ -161,3 +182,43 @@ def predict(video_bytes: bytes, *, filename: str | None = None) -> dict:
             "confidence": 0.0,
         }
     return {"gloss": gloss, "top_k": top_k, "confidence": round(prob, 4)}
+
+
+# Sentence-level: segment long video into 64-frame chunks, run I3D on each, return gloss list.
+SENTENCE_MAX_FRAMES = 640  # ~20s at 32fps
+SENTENCE_STRIDE = 32  # overlap by half
+
+
+def predict_sentence(video_bytes: bytes, *, filename: str | None = None) -> dict:
+    """Segment video into 64-frame windows, run I3D on each, return glosses + sentence."""
+    from backend.app.gloss_to_sentence import glosses_to_sentence
+
+    model, class_names, device, transform = get_model()
+    frames = _load_frames_from_video_bytes(
+        video_bytes, max_frames=SENTENCE_MAX_FRAMES, filename=filename
+    )
+    T = frames.shape[0]
+    if _is_empty_frames(frames) or T < MAX_FRAMES:
+        single = predict(video_bytes, filename=filename)
+        glosses = [single["gloss"]] if single["gloss"] != "(no sign)" else []
+        sentence = glosses_to_sentence(glosses) if glosses else ""
+        return {"glosses": glosses, "sentence": sentence}
+
+    glosses = []
+    for start in range(0, T - MAX_FRAMES + 1, SENTENCE_STRIDE):
+        seg = frames[start : start + MAX_FRAMES]
+        if transform is not None:
+            seg = transform(seg)
+        tensor = _video_to_tensor(seg).unsqueeze(0).to(device)
+        with torch.no_grad():
+            logits = model(tensor)
+        pred = torch.max(logits, dim=2)[0][0].cpu().numpy()
+        top1_idx = int(pred.argsort()[::-1][0])
+        exp = np.exp(pred - pred.max())
+        prob = float(exp[top1_idx] / exp.sum())
+        if prob >= MIN_CONFIDENCE_THRESHOLD and top1_idx < len(class_names):
+            g = class_names[top1_idx]
+            if g != "(no sign)" and (not glosses or glosses[-1] != g):
+                glosses.append(g)
+    sentence = glosses_to_sentence(glosses) if glosses else ""
+    return {"glosses": glosses, "sentence": sentence}
