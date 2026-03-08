@@ -1,6 +1,6 @@
-# Sign Language App
+# CareSign
 
-Web app for sign language: **Sign Interpretation** (camera → gloss), **Finger Spelling**, and **Voice to Avatar**. Backend: FastAPI + WLASL I3D. Frontend: Vite + React + TypeScript + Tailwind.
+Sign language for healthcare: **Sign Interpretation** (camera → gloss), **Finger Spelling**, and **Voice to Avatar**. Built for hospitals and care settings. Backend: FastAPI + WLASL I3D. Frontend: Vite + React + TypeScript + Tailwind.
 
 ## Quick start
 
