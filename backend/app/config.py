@@ -24,6 +24,20 @@ CHECKPOINT_PATH = Path(
 CLASS_LIST_PATH = Path(
     os.environ.get("CLASS_LIST_PATH", str(ROOT / "dataset" / "wlasl_class_list.txt"))
 )
+# Optional: extra word→gloss list for text-to-gloss (one gloss per line, or word\tgloss). Merged with class list.
+TEXT_TO_GLOSS_EXTRA_PATH = Path(
+    os.environ.get("TEXT_TO_GLOSS_EXTRA_PATH", str(ROOT / "dataset" / "text_to_gloss_extra.txt"))
+)
+# WLASL gloss→video lookup for voice-to-avatar (optional)
+WLASL_JSON_PATH = Path(
+    os.environ.get("WLASL_JSON_PATH", str(ROOT / "dataset" / "WLASL_v0.3.json"))
+)
+WLASL_VIDEOS_DIR = Path(
+    os.environ.get("WLASL_VIDEOS_DIR", str(ROOT / "dataset" / "videos"))
+)
+WLASL_MISSING_PATH = Path(
+    os.environ.get("WLASL_MISSING_PATH", str(ROOT / "dataset" / "missing.txt"))
+)
 RGB_BACKBONE_PATH = WEIGHTS_DIR / "rgb_imagenet.pt"
 
 # Static frontend (after npm run build)

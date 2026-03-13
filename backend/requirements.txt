@@ -2,6 +2,10 @@
 fastapi>=0.104.0
 uvicorn[standard]>=0.24.0
 python-multipart>=0.0.6
+# Text→gloss: lemmatization for better vocabulary coverage
+simplemma>=0.4.0
+# English vocabulary: known words → single gloss (no fingerspelling); only fingerspell non-words (names, typos).
+english-words>=2.0.0
 # Model (shared with repo). PyTorch 2.4+ needed for full transformers support; 2.2 works for I3D sign interpretation.
 numpy<2
 torch>=2.2.0
@@ -12,3 +16,8 @@ huggingface_hub>=0.20.0
 # Gloss→sentence (optional): pretrained text-to-text model
 transformers>=4.36.0
 sentencepiece>=0.1.99
+# How2Sign Holistic (Option A): load metadata + TensorFlow dataset
+pandas>=2.0.0
+# Optional: extract .rar from How2Sign_Holistic (pip install patool rarfile)
+# patool
+# rarfile

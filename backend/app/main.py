@@ -6,10 +6,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
-from backend.app.config import FRONTEND_DIST
+from backend.app.config import FRONTEND_DIST, WLASL_VIDEOS_DIR
 from backend.app.fingerspelling import predict_letter
 from backend.app.gloss_to_sentence import glosses_to_sentence
+from backend.app.gloss_to_signs import glosses_to_sign_sequence
 from backend.app.inference import predict, predict_sentence
+from backend.app.text_to_gloss import text_to_glosses
 
 logger = logging.getLogger(__name__)
 
@@ -68,6 +70,23 @@ class GlossToSentenceResponse(BaseModel):
     sentence: str
 
 
+class TextToGlossRequest(BaseModel):
+    text: str
+
+
+class TextToGlossResponse(BaseModel):
+    glosses: list[str]
+
+
+class GlossToSignsRequest(BaseModel):
+    glosses: list[str]
+
+
+# Sign item: {"type": "sign", "gloss": str} | {"type": "fingerspell", "letters": list[str]}
+class GlossToSignsResponse(BaseModel):
+    sequence: list[dict]
+
+
 class FingerspellingRequest(BaseModel):
     """21 MediaPipe hand landmarks: [ [x,y,z], ... ] (x,y normalized 0-1; z depth from wrist)."""
     landmarks: list[list[float]]
@@ -93,6 +112,31 @@ async def predict_fingerspelling_endpoint(body: FingerspellingRequest):
 async def gloss_to_sentence_endpoint(body: GlossToSentenceRequest):
     sentence = glosses_to_sentence(body.glosses)
     return GlossToSentenceResponse(sentence=sentence)
+
+
+@app.post("/text-to-gloss", response_model=TextToGlossResponse)
+async def text_to_gloss_endpoint(body: TextToGlossRequest):
+    """Convert English text to a sequence of sign glosses (for voice-to-avatar)."""
+    glosses = text_to_glosses(body.text or "")
+    return TextToGlossResponse(glosses=glosses)
+
+
+@app.post("/gloss-to-signs", response_model=GlossToSignsResponse)
+async def gloss_to_signs_endpoint(body: GlossToSignsRequest):
+    """Convert gloss sequence to sign playback sequence (sign vs fingerspell items)."""
+    sequence = glosses_to_sign_sequence(body.glosses or [])
+    return GlossToSignsResponse(sequence=sequence)
+
+
+@app.get("/sign-video/{video_id}")
+async def sign_video_endpoint(video_id: str):
+    """Serve a WLASL sign video by id (from dataset/videos/). Safe path only."""
+    if not video_id or not video_id.replace("-", "").replace("_", "").isalnum():
+        raise HTTPException(400, "Invalid video_id")
+    path = WLASL_VIDEOS_DIR / f"{video_id}.mp4"
+    if not path.is_file():
+        raise HTTPException(404, "Video not found")
+    return FileResponse(path, media_type="video/mp4")
 
 
 # Serve frontend SPA (single-server deployment)

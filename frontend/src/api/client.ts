@@ -4,6 +4,15 @@ export interface PredictResponse {
   confidence: number
 }
 
+const API_BASE =
+  typeof import.meta !== 'undefined' && import.meta.env?.DEV
+    ? 'http://127.0.0.1:8000'
+    : ''
+
+export function apiUrl(path: string): string {
+  return `${API_BASE}${path}`
+}
+
 export async function predictFromVideoBlob(
   blob: Blob,
   filename?: string
@@ -11,7 +20,7 @@ export async function predictFromVideoBlob(
   const form = new FormData()
   const name = filename ?? (blob instanceof File ? blob.name : 'clip.webm')
   form.append('video', blob, name)
-  const res = await fetch('/predict', {
+  const res = await fetch(apiUrl('/predict'), {
     method: 'POST',
     body: form,
   })
@@ -34,7 +43,7 @@ export async function predictSentenceFromVideoBlob(
   const form = new FormData()
   const name = filename ?? (blob instanceof File ? blob.name : 'clip.webm')
   form.append('video', blob, name)
-  const res = await fetch('/predict-sentence', {
+  const res = await fetch(apiUrl('/predict-sentence'), {
     method: 'POST',
     body: form,
   })
@@ -50,7 +59,46 @@ export interface GlossToSentenceResponse {
 }
 
 export async function glossToSentence(glosses: string[]): Promise<GlossToSentenceResponse> {
-  const res = await fetch('/gloss-to-sentence', {
+  const res = await fetch(apiUrl('/gloss-to-sentence'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ glosses }),
+  })
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(text || `HTTP ${res.status}`)
+  }
+  return res.json()
+}
+
+export interface TextToGlossResponse {
+  glosses: string[]
+}
+
+export async function textToGloss(text: string): Promise<TextToGlossResponse> {
+  const res = await fetch(apiUrl('/text-to-gloss'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text: text.trim() }),
+  })
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(text || `HTTP ${res.status}`)
+  }
+  return res.json()
+}
+
+/** One item in the sign playback sequence */
+export type SignSequenceItem =
+  | { type: 'sign'; gloss: string; video_id?: string | null }
+  | { type: 'fingerspell'; letters: string[] }
+
+export interface GlossToSignsResponse {
+  sequence: SignSequenceItem[]
+}
+
+export async function glossToSigns(glosses: string[]): Promise<GlossToSignsResponse> {
+  const res = await fetch(apiUrl('/gloss-to-signs'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ glosses }),
@@ -72,7 +120,7 @@ export interface FingerspellingResponse {
 export async function predictFingerspelling(
   landmarks: number[][]
 ): Promise<FingerspellingResponse> {
-  const res = await fetch('/predict-fingerspelling', {
+  const res = await fetch(apiUrl('/predict-fingerspelling'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ landmarks }),
